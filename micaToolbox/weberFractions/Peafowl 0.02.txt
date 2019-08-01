@@ -1,0 +1,6 @@
+Peafowl Weber Fractions at 0.02 (cone ratios from Hart 2002, 1 : 1.9 : 2.2 : 2.1)
+lw	0.0204706526
+mw	0.02
+sw	0.0215211035
+vs	0.0296647939
+

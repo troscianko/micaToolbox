@@ -1,0 +1,1 @@
+equation=[Straight Line] a=0.000000000 b=1 c=0.000000000 d=0.000000000 slice=1,equation=[Straight Line] a=0.000000000 b=1 c=0.000000000 d=0.000000000 slice=2,equation=[Straight Line] a=0.000000000 b=1 c=0.000000000 d=0.000000000 slice=3

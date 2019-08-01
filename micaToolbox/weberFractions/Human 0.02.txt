@@ -1,0 +1,4 @@
+Human Weber fractions at 0.02  (Hofer et al 2005, 0.629:0.314:0.057 - this is less blue-conservative)
+lw	0.02
+mw	0.0282842712
+sw	0.0662973453

@@ -1,0 +1,1 @@
+equation=[sRGB] a=0 b=1 slice=1,equation=[sRGB] a=0 b=1 slice=2,equation=[sRGB] a=0 b=1 slice=3

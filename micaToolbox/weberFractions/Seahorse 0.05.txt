@@ -1,0 +1,5 @@
+Seahorse H. subelongatus Weber Fractions at 0.05 (cone ratios from Mosk et al 2007: 4:9:8:5)
+lw	0.0670820393
+mlw	0.0530330086
+mw	0.05
+sw	0.075

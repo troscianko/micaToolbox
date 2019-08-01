@@ -1,0 +1,7 @@
+Gaussian
+1
+None
+Bluetit 0.05
+0.1
+0
+0

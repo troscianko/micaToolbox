@@ -1,0 +1,5 @@
+Bluetit Weber Fractions at 0.02 (cone ratios from Hart et al 2000, 1 : 1.92 : 2.68 : 2.7)
+lw	0.02
+mw	0.0200744882
+sw	0.0237170825
+uv	0.0328633535

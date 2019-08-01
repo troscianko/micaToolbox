@@ -1,0 +1,14 @@
+13_c5_S_
+v:R:Normalised
+2
+512
+1.414213562
+Multiply
+1
+1
+0
+0
+100
+Linear
+
+DoG

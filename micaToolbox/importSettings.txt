@@ -1,0 +1,16 @@
+Visible
+Same photo
+0
+7
+0
+0
+0
+Manual Align
+16
+1
+0.005
+1
+1
+Linear Normalised Reflectance Stack
+Danaus_Male
+1
