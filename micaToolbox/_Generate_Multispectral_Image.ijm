@@ -739,6 +739,7 @@ if(greyLocation == "Separate photos"){
 	} else {
 		setBatchMode(true);
 		open(imagePath);
+		photoID = getImageID();
 		if(bitDepth == 24){
 			rgbFlag = 1;
 
