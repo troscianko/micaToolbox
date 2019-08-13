@@ -1,5 +1,9 @@
 __________MULTISPECTRAL IMAGE CALIBRATION AND ANALYSIS TOOLBOX________________
 
+>>>>>>>>>>>> PLEASE VISIT WWW.EMPIRICALIMAGING.COM <<<<<<<<<<<<<<<<<
+
+www.empiricalimaging.com hosts all the user guides, videos and forum.
+
 This toolbox was written by Jolyon Troscianko 2013-2019, funded by BBSRC grants
 to Martin Stevens and NERC fellowship to Jolyon Troscianko.
 
@@ -9,12 +13,14 @@ only if they give credit by citing the relevatn papers:
 
 Troscianko, J. & Stevens, M. (2015), Methods in Ecology & Evolution.
 
+The QCPA framework component was a collaboration with these co-authors:
+
+Cedric P. van den Berg, Jolyon Troscianko, John A. Endler, N. Justin Marshall,
+Karen L. Cheney (2019). Quantitative Colour Pattern Analysis (QCPA): A Comprehensive
+Framework for the Analysis of Colour Patterns in Nature
 
 DCRAW is written by David Coffin, and we include a version of DCRAW with the
 toolbox in line with the license for DCRAW.
-
-IJ-dcraw is a plugin for ImageJ written by Jarek Sacha, who kindly allowed us
-to distribute his plugin with this toolbox.
 
 Further credit should be given to the sources of the spectrum database:
 Arnold, S.E., Faruq, S., Savolainen, V., McOwan, P.W., and Chittka, L. (2010).
