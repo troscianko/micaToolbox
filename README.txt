@@ -29,6 +29,10 @@ PloS One 5, e14287.
 
 And spectral sensitivity curves for various species.
 
+The DOI for the QCPA GitHub release is:
+DOI 10.5281/zenodo.3517897
+https://zenodo.org/badge/latestdoi/200011243
+
 
 Introduction:
 ~~~~~~~~~~~~~~~~
