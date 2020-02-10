@@ -4,6 +4,7 @@ _______________________________________________________________________
 	Title: Batch Make Presentation Images
 	Author: Jolyon Troscianko
 	Date: 30/06/15
+		10/2/2020 Added compatibility with CIEXYZ to sRGB space function
 .................................................................................................................
 
 Description:
@@ -70,7 +71,7 @@ for(j=0; j<mspecList.length; j++){
 	print("\\Update3:Processing Image " + (j+1) + " of " + mspecList.length);
 
 	// LOAD MULTISPECTRAL IMAGE
-	imageString = "select=[" + imageDIR + mspecList[j] + "] image=[Aligned Normalised 32-bit]";
+	imageString = "select=[" + imageDIR + mspecList[j] + "] image=[Linear Normalised Reflectance Stack]";
 	run(" Load Multispectral Image", imageString);
 
 	// SCALE IMAGE

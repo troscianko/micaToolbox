@@ -3,7 +3,8 @@ ________________________________________________________________________________
 
 	Title: Generate cone mapping models
 	Author: Jolyon Troscianko
-	Date: 
+	Date: 12/02/2019
+		10/2/2020 - bug fix, now opens .CSV files with manual parse
 ....................................................................................................................................................................................
 
 	Description:
@@ -20,27 +21,58 @@ requires("1.52a");
 
 //updateResults();
 
+run("Input/Output...", "jpeg=95 gif=-1 file=.csv use_file copy_column save_column");
+
 if(nResults==0){
-	path=File.openDialog("Select Measurement Results File");
-	open(path);
+	path=File.openDialog("Select Measurement Results CSV File");
+	//open(path);
+
+	ts = File.openAsString(path);
+	ts = replace(ts, "\t", ","); // works with tab-deliniated files too
+	ta = split(ts, "\n");
+	sensorNames = split(ta[0], ",");
+	//nColumns = sensorNames.length;
+	//sensorNames = newArray(nColumns);
+
+	nRes = ta.length-1;
+	if(nRes<20)
+		waitForUser("There aren't many measurements - the models might be poor quality!");
+
+	chartVals = newArray(nRes*sensorNames.length);
+
+
+	for(j=1; j<ta.length; j++)
+	for(i=0; i<sensorNames.length; i++){
+		
+		taa = split(ta[j], ",");
+		chartVals[(i*nRes)+(j-1)] = parseFloat( taa[i]);
+	}
+
+
+
+
+} else{  // load from results window
+	columns = split(String.getResultsHeadings, "\t"); //array of column names (must not have any repeats)
+	nColumns = columns.length;
+	chartVals = newArray(nResults*nColumns);
+
+
+	for(j=0; j<nColumns; j++)
+		for(i=0; i<nResults; i++)
+			chartVals[(j*nResults)+i] = getResult(columns[j],i);
+
+	sensorNames = newArray(nColumns);
+	for(j=0; j<nColumns; j++)
+		sensorNames[j] = columns[j];
+
+	if(nResults<20)
+		waitForUser("There aren't many measurements - the models might be poor quality!");
+
 }
 
-if(nResults<20)
-	waitForUser("There aren't many measurements - the models might be poor quality!");
 
 
-columns = split(String.getResultsHeadings, "\t"); //array of column names (must not have any repeats)
-nColumns = columns.length;
-chartVals = newArray(nResults*nColumns);
 
-
-for(j=0; j<nColumns; j++)
-	for(i=0; i<nResults; i++)
-		chartVals[(j*nResults)+i] = getResult(columns[j],i);
-
-sensorNames = newArray(nColumns);
-for(j=0; j<nColumns; j++)
-	sensorNames[j] = columns[j];
 
 
 // LIST ILLUMINANTS
@@ -219,9 +251,11 @@ for(i=0; i<coneNames.length; i++){
 }//i
 */
 
+if(nResults!=0){
+	selectWindow("Results");
+	run("Close");
+}
 
-selectWindow("Results");
-run("Close");
 
 //open("/home/jolyon/ImageJ/plugins/Jolyon/Colour Chart Calibration/7DpastelRawPxVals.csv");
 

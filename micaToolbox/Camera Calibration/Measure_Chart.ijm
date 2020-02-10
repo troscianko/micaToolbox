@@ -200,4 +200,7 @@ setSlice(1);
 
 makeSelection("multipoint", xCoords, yCoords);
 updateResults();
+
+run("Input/Output...", "jpeg=95 gif=-1 file=.csv use_file copy_column save_column");
+
 waitForUser("Check Measurement Zones", "Check that there is no overlap between the measured squares\nand the colour chart squares. If there is overlap select a smaller\nmargin scale and repeat.");

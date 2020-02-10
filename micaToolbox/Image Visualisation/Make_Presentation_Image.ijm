@@ -24,7 +24,7 @@ title = getTitle();
 w=getWidth();
 h=getHeight();
 
-setBatchMode(true);
+//setBatchMode(true);
 sliceNames = newArray(nSlices);
 setSlice(1);
 
@@ -40,6 +40,7 @@ for(i=0; i<nSlices; i++){
 
 outColours = newArray("Red", "Green", "Blue", "Yellow", "Ignore");
 transform = newArray("None", "Square Root");
+outSuggestions = newArray("Red", "Green", "Blue", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore", "Ignore");
 
 if(maxVal < 10)
 	maxRec = 1;
@@ -49,7 +50,7 @@ else maxRec = 100;
 Dialog.create("Colour and False-Colour Image Creator");
 	Dialog.addMessage("Select which input channels to use for each colour output. For best results\nonly use red, green and blue once each, or yellow and blue for dichromats.");
 	for(i=0; i<nSlices; i++){
-		Dialog.addChoice(replace(sliceNames[i], ":", "_"), outColours, outColours[4]);
+		Dialog.addChoice(replace(sliceNames[i], ":", "_"), outColours, outSuggestions[i]);
 	}
 
 	Dialog.addMessage(" __________Image Brightness__________");
@@ -58,9 +59,13 @@ Dialog.create("Colour and False-Colour Image Creator");
 	Dialog.addNumber("Presentation image maximum:", maxRec);
 
 	Dialog.addMessage(" __________Non-linear Transform__________");
-	Dialog.addNumber("Power", 0.8);
+	Dialog.addNumber("Power", 0.5);
 	Dialog.addMessage("1=linear image (often looks too dark), 0.5=square-root transform (very non-linear).\nWhere presentation images will be directly compared to each-other make sure\nthe same maximum and transform values are used. Remember this image is for\npresentation only, not for measurements");
-	Dialog.addCheckbox("Convert to RGB colour", false);
+	Dialog.addCheckbox("Convert to 24-bit RGB colour", false);
+	Dialog.addCheckbox("CIEXYZ to sRGB conversion", false);
+	Dialog.addMessage("This conversion restores 'normal' colour saturation from XYZ images");
+	
+
 Dialog.show();
 
 for(i=0; i<nSlices; i++)
@@ -69,6 +74,7 @@ for(i=0; i<nSlices; i++)
 maxVal = Dialog.getNumber();
 tPower = Dialog.getNumber();
 rgbColour = Dialog.getCheckbox();
+srgbColour = Dialog.getCheckbox();
 
 maxVal = pow(maxVal, tPower);
 
@@ -99,14 +105,13 @@ title = replace(title, ":", "");
 
 
 newImage(title, "32-bit black", w, h, outCount);
-run("Make Composite", "display=Composite");
+if(srgbColour ==  false)
+	run("Make Composite", "display=Composite");
+
 outImage = getImageID();
 
 setPasteMode("Copy");
-min = 0;
-max=maxVal;
 
-tempString = "code=v=pow(v," + tPower + ") slice";
 
 outSlice = 1;
 for(i=0; i<sliceNames.length; i++)
@@ -118,14 +123,36 @@ for(i=0; i<sliceNames.length; i++)
 		selectImage(outImage);
 		setSlice(outSlice);
 		run("Paste");
-		run(outColours[i]);
-		if(tPower != 1)
-			run("Macro...", tempString);
-		setMinAndMax(min, max);
+		if(srgbColour ==  false)
+			run(outColours[i]);
+		//if(tPower != 1)
+		//	run("Macro...", tempString);
+		//setMinAndMax(min, max);
 		outSlice++;
 	}//fi
 
-selectImage(outImage);
+if(srgbColour ==  true){
+	run("CIEXYZ to Linear sRGB");
+	run("Make Composite", "display=Composite");
+
+	outSRGB = getImageID();
+	selectImage(outImage);
+	close();
+	selectImage(outSRGB);
+	rename(title);
+}
+
+tempString = "code=v=pow(v," + tPower + ") slice";
+
+if(tPower != 1)
+for(i=0; i<nSlices; i++){
+	setSlice(i+1);
+	run("Macro...", tempString);
+}
+
+ts = "min=0 max=" + maxVal;
+run("Set Min And Max", ts);
+
 if(rgbColour==true)
 	run("RGB Color");
 
