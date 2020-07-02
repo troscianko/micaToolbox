@@ -68,6 +68,8 @@ Dialog.create("Colour and False-Colour Image Creator");
 
 Dialog.show();
 
+outColours = newArray(nSlices);
+
 for(i=0; i<nSlices; i++)
 	outColours[i] = Dialog.getChoice();
 
