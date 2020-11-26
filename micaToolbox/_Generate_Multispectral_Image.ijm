@@ -10,6 +10,9 @@ _______________________________________________________________________
 		the toolbox. The settings options have been simplified
 		slightly. Support for non-linear images has been 
 		improved (sRGB and linear image support).
+	update:20/10/20 - major overhaul of mspec system, with more flexble
+		metadata-based information sharing between scripts
+		and support for affine transform alignment 
 .................................................................................................................
 
 Description:
@@ -100,8 +103,6 @@ if(File.exists(settingsFilePath) == 1){
 
 	greyChoice = newArray("Same photo", "Separate photos");
 	offsetOptions = newArray("4","8","16","32","64","128","256","512","1024");
-	//outputOptions = newArray( "Aligned Normalised 32-bit", "Aligned Linear 32-bit", "Visual 32-bit", "Pseudo UV 32-bit", "Config file only");
-	//outputOptions = newArray("Config file only", "Unaligned Linear 16-bit", "Aligned Linear 32-bit", "Aligned Linear 16-bit", "Aligned Linear 8-bit", "Aligned Normalised 32-bit", "Aligned Normalised 16-bit", "Aligned Normalised 8-bit", "Visual 32-bit", "Pseudo UV 32-bit");
 	outputOptions = newArray(
 		"Linear Normalised Reflectance Stack",
 		"Linear Stack",
@@ -110,35 +111,23 @@ if(File.exists(settingsFilePath) == 1){
 		"Non-linear Colour VIS-UV Image");
 
 	//lineariseOptions = newArray("Linearise Only", "Linearise & Normalise");
-	alignOptions = newArray("None", "Auto-Align", "Manual Align");
+	alignOptions = newArray("None", "Auto-Align", "Manual Align", "Affine Align");
 
 	helpPage = "http://www.empiricalimaging.com/knowledge-base/creating-a-calibrated-image/";
 
 	Dialog.create("Multispectral Image Generation");
-		//Dialog.addMessage("Camera & Filter configuration");
 		Dialog.addChoice("Camera type", infoNames, defaultSettings[0]); // change the last value here to change the default
 		Dialog.addChoice("Image type", inImType, defaultSettings[12]); // change the last value here to change the default
 				
-		//Dialog.addCheckbox("Non-linear Image (e.g. JPG, TIFF, non-RAW format)", defaultSettings[12]);
-		//Dialog.addMessage("This requires making a linearisation model first");
-
 		Dialog.addMessage("_________________Grey Standards_________________");
 		Dialog.addChoice("Grey standards in:", greyChoice, defaultSettings[1]);
 		Dialog.addCheckbox("Estimate black point (useful with one standard)", defaultSettings[2]);
 		Dialog.addString("Standard reflectance(s)", defaultSettings[3], 20);
-		//Dialog.addMessage("Separate values with a comma, e.g. 20% & 80%\nwould be \"20,80\" ");
 		Dialog.addCheckbox("Customise standard levels", defaultSettings[4]);
-		//Dialog.addMessage("e.g. use when you know the standard does not\nhave perfectly uniform specral reflectance");
 		Dialog.addCheckbox("Standards move between photos", defaultSettings[5]);
-		//Dialog.addMessage("Use when the locations of the standards change\nbetween photos (more than just mis-alignment)");
 
 		Dialog.addMessage("________________Alignment & Scaling______________ ");
 		Dialog.addChoice("Alignment", alignOptions, defaultSettings[7]);
-
-		//Dialog.addChoice("Offset", offsetOptions, defaultSettings[8]);
-		//Dialog.addNumber("Scaling loops (1=off)", defaultSettings[9]);
-		//Dialog.addNumber("Scale_step_size",defaultSettings[10]);
-		//Dialog.addCheckbox("Custom alignment zone", defaultSettings[11]);
 
 		Dialog.addMessage("___________________Output_________________ ");
 		Dialog.addChoice("Image output", outputOptions, defaultSettings[13]);
@@ -184,7 +173,9 @@ if(autoAlignOption != "None"){
 			Dialog.addNumber("Scale_step_size",defaultSettings[10]);
 		}
 
-		Dialog.addCheckbox("Custom alignment zone", defaultSettings[11]);
+
+		if(autoAlignOption != "Affine Align")
+			Dialog.addCheckbox("Custom alignment zone", defaultSettings[11]);
 
 	Dialog.show();
 
@@ -200,7 +191,9 @@ if(autoAlignOption != "None"){
 		autoAlignScaleStepSize = defaultSettings[10];
 		autoAlignProportion = 1-(2*autoAlignScaleStepSize);
 	}
-	autoAlignCustomZone = Dialog.getCheckbox();
+	if(autoAlignOption != "Affine Align")
+		autoAlignCustomZone = Dialog.getCheckbox();
+	else autoAlignCustomZone = 0;
 
 } else {
 
@@ -248,11 +241,18 @@ File.close(dataFile);
 
 	// Calculate number of slices required
 	stackSize = 0;
+
+	slideNumberString = "";
+
 	for(i=1; i<(settingsString.length); i++){
 		settingsTemp = split(settingsString[i], "\t");
-		for(j=1; j<=3; j++)
+		for(j=1; j<=3; j++){
 			if(parseInt(settingsTemp[j]) > stackSize)
 				stackSize = parseInt(settingsTemp[j]);
+			if(slideNumberString == "")
+				slideNumberString = settingsTemp[j];
+			else slideNumberString = slideNumberString + "," +settingsTemp[j];
+		}
 	}
 
 	nPhotos = settingsString.length-1;
@@ -330,6 +330,10 @@ for(i=0; i<nPhotos; i++)
 
 
 // OPEN IMAGES & MEASURE STANDARD(s)
+
+alignSaveString  = "";
+labelSaveString = "";
+greySaveString = "";
 
 channelNames = newArray("R","G","B");
 firstFlag = 1;
@@ -525,9 +529,12 @@ for(j=0; j<nPhotos; j++){
 		else
 			run("Select All");
 
+		
 		run("Copy");
-		run("Internal Clipboard");
-		rename("align2");
+		if(autoAlignOption != "Affine Align"){
+			run("Internal Clipboard");
+			rename("align2");
+		}
 	
 		if(autoAlignOption == "Auto-Align"){
 			alignString =  "offset=" + autoAlignOffset + " loops=" + autoAlignLoops +" scale_step_size=" + autoAlignScaleStepSize + " proportion=" + autoAlignProportion;
@@ -550,34 +557,191 @@ for(j=0; j<nPhotos; j++){
 			close();
 		}
 
+		if(autoAlignOption == "Affine Align"){
+			selectImage("align1");
+			run("Add Slice");
+			run("Paste");
+			run("Select None");
+			run("Enhance Contrast", "saturated=0.35");
+	
+
+			selectImage(newStack);
+			setBatchMode("show");
+			selectImage(photoID);
+			setBatchMode("show");
+			selectImage("align1");
+			setBatchMode("show");
+			setBatchMode(false);
+
+//-------------Affine align start---------------
+
+flag=0;
+
+msg = "Select three or more points of alignment in each image, using the multipoint tool \n \nTip: if you have lots of photos with the same offset, you can save and reload the point\nROI in the ROI manager";
+
+setTool("Multipoint");
+
+while(flag==0){
+
+	waitForUser(msg);
+
+	getSelectionCoordinates(xs, ys);
+
+	if(selectionType == 10 && xs.length>=6 && xs.length/2 == round(xs.length/2))
+		flag=1;
+	else msg = "You need to use the multi-point tool, and ensure there are three or more corresponding points in each slice";
+
+
+	run("Clear Results");
+	run("Set Measurements...", "area mean min redirect=None decimal=9");
+	run("Measure");
+
+	zs = newArray(xs.length);
+
+	n1s = 0;
+	n2s = 0;
+	for(i=0; i<xs.length; i++){
+		zs[i] = getResult("Slice", i);
+		if(zs[i] == 1)
+			n1s++;
+		if(zs[i] == 2)
+			n2s++;
+	}
+	if(n1s != n2s){
+		flag = 0;
+		msg = "There aren't an equal number of anchor points in each slice";
+	}
+
+}// waiting for user to select the right type of points
+
+x1 = newArray(n1s);
+y1 = newArray(n1s);
+
+x2 = newArray(n1s);
+y2 = newArray(n1s);
+
+t1 = 0;
+t2 = 0;
+
+for(i=0; i<xs.length; i++){
+	if(zs[i] == 1){
+		x1[t1] = xs[i];
+		y1[t1] = ys[i];
+		t1++;
+	}
+
+	if(zs[i] == 2){
+		x2[t2] = xs[i];
+		y2[t2] = ys[i];
+		t2++;
+	}
+		
+}
+
+
+
+run("Clear Results");
+
+for(i=0; i<x1.length; i++){
+	setResult("x", i, x2[i]);
+	setResult("x2", i, x1[i]);
+	setResult("y2", i, y1[i]);
+}
+
+print("\\Clear");
+run("multiple regression");
+logString = getInfo("log");
+logString = split(logString, "\n");
+logString = logString[2];
+logString = replace(logString, "\\(x2\\*", "");
+logString = replace(logString, "\\(y2\\*", "");
+logString = replace(logString, "\\)", "");
+logString = replace(logString, " ", "");
+logString = split(logString, "+");
+
+
+if(logString.length != 3)
+	exit("Error parsing the matrix");
+
+xAffine = newArray(3);
+for(i=0; i<3; i++)
+	xAffine[i] = logString[i];
+	//xAffine[i] = parseFloat(logString[i]);
+
+//Array.show(logString);
+
+
+
+run("Clear Results");
+
+for(i=0; i<x1.length; i++){
+	setResult("y", i, y2[i]);
+	setResult("x2", i, x1[i]);
+	setResult("y2", i, y1[i]);
+}
+
+print("\\Clear");
+run("multiple regression");
+logString = getInfo("log");
+logString = split(logString, "\n");
+logString = logString[2];
+logString = replace(logString, "\\(x2\\*", "");
+logString = replace(logString, "\\(y2\\*", "");
+logString = replace(logString, "\\)", "");
+logString = replace(logString, " ", "");
+logString = split(logString, "+");
+
+
+if(logString.length != 3)
+	exit("Error parsing the matrix");
+
+yAffine = newArray(3);
+for(i=0; i<3; i++)
+	yAffine[i] = logString[i];
+	//yAffine[i] = parseFloat(logString[i]);
+
+//Array.show(xAffine, yAffine);
+print("\\Clear");
+
+
+
+
+
+//--------------Affine align end--------------------
+		}
+
 
 
 		selectImage("align1");
 		close();
-		selectImage("align2");
-		close();
-
-		// extract alignment info
-		selectWindow("Alignment Results");
-		alignInfo = getInfo("window.contents");
-		alignInfo = split(alignInfo, "\n"); // split rows
-		alignInfo = split(alignInfo[1], "\t"); // split second row into data
-		run("Close");
+		if(autoAlignOption != "Affine Align"){
+			selectImage("align2");
+			close();
 		
-		scaleShift = parseFloat(alignInfo[2]);
 
-		if(autoAlignCustomZone == 1 && scaleShift != 1){ // coords need updating if a custom zone was used and the scale was changed
-			w = getWidth();
-			h = getHeight();
-			xImageShift = (w-(w*scaleShift))/2;
-			yImageShift = (h-(h*scaleShift))/2;
-			xZoneShift = (wAlign-(wAlign*scaleShift))/2;
-			yZoneShift = (hAlign-(hAlign*scaleShift))/2;
-			xShiftDiff = xZoneShift - xImageShift;
-			yShiftDiff = yZoneShift - yImageShift;
+			// extract alignment info
+			selectWindow("Alignment Results");
+			alignInfo = getInfo("window.contents");
+			alignInfo = split(alignInfo, "\n"); // split rows
+			alignInfo = split(alignInfo[1], "\t"); // split second row into data
+			run("Close");
 		
-			alignInfo[0] = round(parseFloat(alignInfo[0])+xShiftDiff);
-			alignInfo[1] =round( parseFloat(alignInfo[1])+yShiftDiff);
+			scaleShift = parseFloat(alignInfo[2]);
+
+			if(autoAlignCustomZone == 1 && scaleShift != 1){ // coords need updating if a custom zone was used and the scale was changed
+				w = getWidth();
+				h = getHeight();
+				xImageShift = (w-(w*scaleShift))/2;
+				yImageShift = (h-(h*scaleShift))/2;
+				xZoneShift = (wAlign-(wAlign*scaleShift))/2;
+				yZoneShift = (hAlign-(hAlign*scaleShift))/2;
+				xShiftDiff = xZoneShift - xImageShift;
+				yShiftDiff = yZoneShift - yImageShift;
+			
+				alignInfo[0] = round(parseFloat(alignInfo[0])+xShiftDiff);
+				alignInfo[1] =round( parseFloat(alignInfo[1])+yShiftDiff);
+			}
+
 		}
 
 	}
@@ -642,7 +806,7 @@ for(i=0; i<standardLevels.length; i++){
 	// MEASURE GREY STANDARDS - only from channels that are to be used
 
 
-	if(j > 0 && autoAlignOption != "None" && greyLocation == "Same photo" && customiseLocation == 0){ // control for alignment of grey standard selection
+	if(j > 0 && autoAlignOption != "None" && greyLocation == "Same photo" && customiseLocation == 0 && autoAlignOption != "Affine Align"){ // control for alignment of grey standard selection
 		getSelectionCoordinates(xCoords, yCoords);
 		for(k = 0; k<xCoords.length; k++){
 			xCoords[k] = xCoords[k] + parseInt(alignInfo[0]);
@@ -657,6 +821,12 @@ for(i=0; i<standardLevels.length; i++){
 	for(k=1; k<=3; k++){
 		if(parseInt(photoSettings[k]) > 0){ // channel is to be added
 			setSlice(k);
+
+			if(j>0 && autoAlignOption == "Affine Align" && customiseLocation == 0){
+				ts = "xc=" + xAffine[0] +" xx=" + xAffine[1]  +" xy=" + xAffine[2] + " yc=" + yAffine[0] + " yx=" + yAffine[1] + " yy=" + yAffine[2] + " slice=" + k;
+				//print(ts);
+				run("Affine align slice", ts);
+			}
 
 			getStatistics(area, mean, min, max, std);
 			if(rgbFlag == 1 || nonLin == "RAW Photo"){
@@ -849,9 +1019,13 @@ if(greyLocation == "Separate photos" || customiseLocation == 1){
 		else
 			run("Select All");
 
+
 		run("Copy");
-		run("Internal Clipboard");
-		rename("align2");
+		if(autoAlignOption != "Affine Align"){
+			run("Internal Clipboard");
+			rename("align2");
+		}
+
 	
 		if(autoAlignOption == "Auto-Align"){
 			alignString =  "offset=" + autoAlignOffset + " loops=" + autoAlignLoops +" scale_step_size=" + autoAlignScaleStepSize + " proportion=" + autoAlignProportion;
@@ -874,32 +1048,192 @@ if(greyLocation == "Separate photos" || customiseLocation == 1){
 			close();
 		}
 
+
+
+		if(autoAlignOption == "Affine Align"){
+			selectImage("align1");
+			run("Add Slice");
+			run("Paste");
+			run("Select None");
+			run("Enhance Contrast", "saturated=0.35");
+	
+
+			selectImage(newStack);
+			setBatchMode("show");
+			selectImage(photoID);
+			setBatchMode("show");
+			selectImage("align1");
+			setBatchMode("show");
+			setBatchMode(false);
+
+//-------------Affine align start---------------
+
+flag=0;
+
+msg = "Select three or more points of alignment in each image, using the multipoint tool \n \nTip: if you have lots of photos with the same offset, you can save and reload the point\nROI in the ROI manager";
+
+setTool("Multipoint");
+
+while(flag==0){
+
+	waitForUser(msg);
+
+	getSelectionCoordinates(xs, ys);
+
+	if(selectionType == 10 && xs.length>=6 && xs.length/2 == round(xs.length/2))
+		flag=1;
+	else msg = "You need to use the multi-point tool, and ensure there are three or more corresponding points in each slice";
+
+
+	run("Clear Results");
+	run("Set Measurements...", "area mean min redirect=None decimal=9");
+	run("Measure");
+
+	zs = newArray(xs.length);
+
+	n1s = 0;
+	n2s = 0;
+	for(i=0; i<xs.length; i++){
+		zs[i] = getResult("Slice", i);
+		if(zs[i] == 1)
+			n1s++;
+		if(zs[i] == 2)
+			n2s++;
+	}
+	if(n1s != n2s){
+		flag = 0;
+		msg = "There aren't an equal number of anchor points in each slice";
+	}
+
+}// waiting for user to select the right type of points
+
+x1 = newArray(n1s);
+y1 = newArray(n1s);
+
+x2 = newArray(n1s);
+y2 = newArray(n1s);
+
+t1 = 0;
+t2 = 0;
+
+for(i=0; i<xs.length; i++){
+	if(zs[i] == 1){
+		x1[t1] = xs[i];
+		y1[t1] = ys[i];
+		t1++;
+	}
+
+	if(zs[i] == 2){
+		x2[t2] = xs[i];
+		y2[t2] = ys[i];
+		t2++;
+	}
+		
+}
+
+
+
+run("Clear Results");
+
+for(i=0; i<x1.length; i++){
+	setResult("x", i, x2[i]);
+	setResult("x2", i, x1[i]);
+	setResult("y2", i, y1[i]);
+}
+
+print("\\Clear");
+run("multiple regression");
+logString = getInfo("log");
+logString = split(logString, "\n");
+logString = logString[2];
+logString = replace(logString, "\\(x2\\*", "");
+logString = replace(logString, "\\(y2\\*", "");
+logString = replace(logString, "\\)", "");
+logString = replace(logString, " ", "");
+logString = split(logString, "+");
+
+
+if(logString.length != 3)
+	exit("Error parsing the matrix");
+
+xAffine = newArray(3);
+for(i=0; i<3; i++)
+	xAffine[i] = logString[i];
+	//xAffine[i] = parseFloat(logString[i]);
+
+//Array.show(logString);
+
+
+
+run("Clear Results");
+
+for(i=0; i<x1.length; i++){
+	setResult("y", i, y2[i]);
+	setResult("x2", i, x1[i]);
+	setResult("y2", i, y1[i]);
+}
+
+print("\\Clear");
+run("multiple regression");
+logString = getInfo("log");
+logString = split(logString, "\n");
+logString = logString[2];
+logString = replace(logString, "\\(x2\\*", "");
+logString = replace(logString, "\\(y2\\*", "");
+logString = replace(logString, "\\)", "");
+logString = replace(logString, " ", "");
+logString = split(logString, "+");
+
+
+if(logString.length != 3)
+	exit("Error parsing the matrix");
+
+yAffine = newArray(3);
+for(i=0; i<3; i++)
+	yAffine[i] = logString[i];
+	//yAffine[i] = parseFloat(logString[i]);
+
+//Array.show(xAffine, yAffine);
+print("\\Clear");
+
+
+
+
+
+//--------------Affine align end--------------------
+		}
+
+
+
 		selectImage("align1");
 		close();
-		selectImage("align2");
-		close();
 
-		// extract alignment info
-		selectWindow("Alignment Results");
-		alignInfo = getInfo("window.contents");
-		alignInfo = split(alignInfo, "\n"); // split rows
-		alignInfo = split(alignInfo[1], "\t"); // split second rown into data
-		run("Close");
-
-		scaleShift = parseFloat(alignInfo[2]);
-
-		if(autoAlignCustomZone == 1 && scaleShift != 1){ // coords need updating if a custom zone was used and the scale was changed
-			w = getWidth();
-			h = getHeight();
-			xImageShift = (w-(w*scaleShift))/2;
-			yImageShift = (h-(h*scaleShift))/2;
-			xZoneShift = (wAlign-(wAlign*scaleShift))/2;
-			yZoneShift = (hAlign-(hAlign*scaleShift))/2;
-			xShiftDiff = xZoneShift - xImageShift;
-			yShiftDiff = yZoneShift - yImageShift;
+		if(autoAlignOption != "Affine Align"){
+			selectImage("align2");
+			close();
 		
-			alignInfo[0] = round(parseFloat(alignInfo[0])+xShiftDiff);
-			alignInfo[1] =round( parseFloat(alignInfo[1])+yShiftDiff);
+			// extract alignment info
+			selectWindow("Alignment Results");
+			alignInfo = getInfo("window.contents");
+			alignInfo = split(alignInfo, "\n"); // split rows
+			alignInfo = split(alignInfo[1], "\t"); // split second rown into data
+			run("Close");
+
+			scaleShift = parseFloat(alignInfo[2]);
+
+			if(autoAlignCustomZone == 1 && scaleShift != 1){ // coords need updating if a custom zone was used and the scale was changed
+				w = getWidth();
+				h = getHeight();
+				xImageShift = (w-(w*scaleShift))/2;
+				yImageShift = (h-(h*scaleShift))/2;
+				xZoneShift = (wAlign-(wAlign*scaleShift))/2;
+				yZoneShift = (hAlign-(hAlign*scaleShift))/2;
+				xShiftDiff = xZoneShift - xImageShift;
+				yShiftDiff = yZoneShift - yImageShift;
+		
+				alignInfo[0] = round(parseFloat(alignInfo[0])+xShiftDiff);
+				alignInfo[1] =round( parseFloat(alignInfo[1])+yShiftDiff);
+			}
 		}
 
 	}
@@ -918,6 +1252,12 @@ for(i=1; i<=3; i++){
 
 		selectImage(photoID);
 		setSlice(i);
+
+		if(greyLocation == "Separate photos" || customiseLocation == 1)
+		if(j>0 && autoAlignOption == "Affine Align"){
+			ts = "xc=" + xAffine[0] +" xx=" + xAffine[1]  +" xy=" + xAffine[2] + " yc=" + yAffine[0] + " yx=" + yAffine[1] + " yy=" + yAffine[2] + " slice=" + i;
+			run("Affine align slice", ts);
+		}
 			
 		if(firstFlag == 1){ // first photo - set up new image
 			run("Select All");
@@ -926,6 +1266,7 @@ for(i=1; i<=3; i++){
 				newImageName = imageName;
 			else newImageName = "Multispectral Composite";
 			newImage(newImageName, "32-bit black", getWidth(), getHeight(), stackSize);
+			setMinAndMax(0, 65535);
 			//run("Internal Clipboard");
 			newStack = getImageID();
 			setSlice(parseInt( photoSettings[i]) );
@@ -943,25 +1284,6 @@ for(i=1; i<=3; i++){
 		}
 
 
-/*
-		if(estimateBlack == 1){ // add a 0.05% dark point
-			run("Select All");
-			getStatistics(area, mean);
-			getHistogram(values, counts, 65535, 0, 65535);
-
-			pxThreshold = 0.001*area; // low pixel value threshold
-			pxSum = 0;
-			k = 0;
-			while(k<65535){
-				pxSum = pxSum + counts[k];
-				if(pxSum >= pxThreshold){
-					lowObs = values[k];
-					k=65535;
-				} else k++;
-			}
-
-		} // estimate black point
-*/
 
 		if(estimateBlack == 1){ // add a 0.05% dark point
 			run("Select All");
@@ -974,26 +1296,56 @@ for(i=1; i<=3; i++){
 
 
 
-		// create label that stores all the relevant linearisation, normalisation, alignment & scale data
 
-		labelString = "label=" + photoSettings[0] + ":" + channelNames[i-1] + ":" + alignInfo[0] + ":" + alignInfo[1] + ":" + alignInfo[2];
+
+		if(greySaveString != ""){
+			greySaveString = greySaveString + ",";
+			labelSaveString = labelSaveString + ",";
+			alignSaveString = alignSaveString + ",";
+		}
+
+		tAlignSaveString = "";
+
+		if(autoAlignOption == "Affine Align" && j>0)
+			tAlignSaveString = xAffine[0] + ":" + xAffine[1] + ":"  + xAffine[2] + ":" + yAffine[0] + ":" + yAffine[1] + ":"  + yAffine[2];
+		else tAlignSaveString = alignInfo[0] + ":" + alignInfo[1] + ":" + alignInfo[2];
+
+		alignSaveString = alignSaveString + tAlignSaveString;
+
+		tGreySaveString = "";
+
+		for(k=0; k<standardLevels.length; k++){
+			if(k>0)
+				tGreySaveString = tGreySaveString + "_";
+			
+			if(i==1)
+				tGreySaveString = tGreySaveString + rGreys[k] + ":" + d2s(rPxs[k], -12);
+			if(i==2)
+				tGreySaveString = tGreySaveString + gGreys[k] + ":" + d2s(gPxs[k], -12);
+			if(i==3)
+				tGreySaveString = tGreySaveString + bGreys[k] + ":" + d2s(bPxs[k], -12);
+		}
+
 
 		if(estimateBlack == 1) // add a 0.00% dark point
-			labelString = labelString + ",0:" + lowObs;
+			tGreySaveString = tGreySaveString + "_0:" + d2s(lowObs, -1);
 
+		greySaveString = greySaveString + tGreySaveString;
 
-		if(i == 1) // copy grey & pixel values to slice label
-			for(k=0; k<standardLevels.length; k++)
-				labelString = labelString + ","+ rGreys[k] + ":" + rPxs[k];
-		if(i == 2)
-			for(k=0; k<standardLevels.length; k++)
-				labelString = labelString + ","+ gGreys[k] + ":" + gPxs[k];
-		if(i == 3)
-			for(k=0; k<standardLevels.length; k++)
-				labelString = labelString + ","+ bGreys[k] + ":" + bPxs[k];
+		tls = photoSettings[0] + ":" + channelNames[i-1];
+		labelSaveString = labelSaveString +  tls;
 
-		saveSliceLabels[parseInt( photoSettings[i])-1] = labelString; // save slice data for config file
-		run("Set Label...", labelString);
+		//saveSliceLabels[parseInt( photoSettings[i])-1] = labelString; // save slice data for config file
+
+		//tls = "label=" + tls;
+		//run("Set Label...", tls);
+
+		tls = tls +"\nrefVals=" + tGreySaveString;
+		tls = tls +"\nalignMethod="+ autoAlignOption;
+		if(autoAlignOption != "None")
+			tls = tls + "\nalignData="+ tAlignSaveString;
+
+		setMetadata(tls);
 
 			
 	}
@@ -1032,20 +1384,20 @@ while(File.exists(configFilePath) == 1){
 if(renameRAWs ==1){
 
 	if(startsWith(photoNames[0], imageName) == 0)
-		photoNamesString = imageName + photoNames[0];
+		photoNamesString = "files=" + imageName + photoNames[0];
 	else
-		photoNamesString = photoNames[0];
+		photoNamesString = "files=" + photoNames[0];
 
 	for(i=1; i<photoNames.length; i++)
 		if(startsWith(photoNames[i], imageName) == 0)
-			photoNamesString = photoNamesString + "\t" + imageName + photoNames[i];
+			photoNamesString = photoNamesString + "," + imageName + photoNames[i];
 		else
-			photoNamesString = photoNamesString + "\t" + photoNames[i];
+			photoNamesString = photoNamesString + "," + photoNames[i];
 } else {
-	photoNamesString = photoNames[0];
+	photoNamesString = "files=" + photoNames[0];
 
 	for(i=1; i<photoNames.length; i++)
-		photoNamesString = photoNamesString + "\t" + photoNames[i];
+		photoNamesString = photoNamesString + "," + photoNames[i];
 }
 
 
@@ -1061,14 +1413,40 @@ if(nonLin != "RAW Photo"){
 	linString = replace(linString, "\n", ""); // ensure there are no line breaks
 }
 
+
+metaString = "mspec calibrated image";
+metaString = metaString + "\n" + photoNamesString;
+metaString = metaString + "\nimageType=" + nonLin;
+if(nonLin != "RAW Photo")
+	metaString = metaString + "\n" + "linearisationModel=" + linString;
+
+metaString = metaString + "\nslices="+slideNumberString;
+metaString = metaString + "\nlabels="+labelSaveString;
+metaString = metaString + "\nrefVals="+greySaveString;
+metaString = metaString + "\nalignMethod="+ autoAlignOption;
+if(autoAlignOption != "None")
+	metaString = metaString + "\nalignData="+ alignSaveString;
+
+//setMetadata(metaString);
+
+
 configFile = File.open(configFilePath);
 
-	print(configFile, settingsChoice);
+	print(configFile, metaString);
+
+/*
+	print(configFile, "mspec calibrated image");
 	print(configFile, photoNamesString);
-	print(configFile, saveSlicelabelsString);
+	print(configFile, "imageType=" + nonLin);
 	if(nonLin != "RAW Photo")
-		print(configFile, linString);
-	else print(configFile, "RAW Photo");
+		print(configFile, "linearisationModel=" + linString);
+	print(configFile, "slices="+slideNumberString);
+	print(configFile, "labels="+labelSaveString);
+	print(configFile, "refVals="+greySaveString);
+	print(configFile, "alignMethod="+ autoAlignOption);
+	if(autoAlignOption != "None")
+		print(configFile, "alignData="+ alignSaveString);
+*/	
 
 File.close(configFile);
 
@@ -1086,10 +1464,18 @@ transformInfo = "";
 if(rgbFlag == 1 || nonLin == "RAW Photo")
 	run("Square", "stack");
 
-if(imageOutput == "Linear Stack")
-	run("Normalise & Align Multispectral Stack", "curve=[Straight Line] align_only");
-else
-	run("Normalise & Align Multispectral Stack", "curve=[Straight Line]");
+
+//setBatchMode("show");
+//waitForUser("waiting");
+
+if(autoAlignOption == "Affine Align" && greyLocation == "Same Photo"){
+	run("Normalise & Align Multispectral Stack", "normalise curve=[Straight Line]");
+}else if(imageOutput == "Linear Stack"){
+	run("Normalise & Align Multispectral Stack", "curve=[Straight Line] align");  // align only
+}else{
+	run("Normalise & Align Multispectral Stack", "normalise curve=[Straight Line] align");
+}
+
 
 if(imageOutput == "Linear Stack")
 	setMinAndMax(0, 65535);

@@ -17,10 +17,10 @@ if( startsWith(osName, "Windows") ==1){
  
 
 rawPath = File.openDialog("Select RAW file");	
-tifPath = split(rawPath,".");
+//tifPath = split(rawPath,".");
+//tifPath = replace(rawPath, tifPath[tifPath.length-1], "tiff");
 
-tifPath = replace(rawPath, tifPath[tifPath.length-1], "tiff");
-
+tifPath = rawPath + ".tiff";
 
 //THIS WORKS (tested on windows, mac and linux)
 //exec("/home/jolyon/Desktop/ImageJ/plugins/dcraw/dcraw", "-w", "-o", "0", "-q", "0", "-4", "-T", "/home/jolyon/Desktop/ImageJ/plugins/dcraw/temp folder/test.SRW");

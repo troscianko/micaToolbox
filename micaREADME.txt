@@ -74,6 +74,15 @@ QCPA analysis added.
 See www.empiricalimaging.com for detailed information on this release (there's
 too much to list here).
 
+
+______________________________________________________________________________
+--------------------------------20/10/2020 -----------------------------------
+Big Update:
+
+Switch to using LibRAW instead of DCRAW
+Addition of affine transform image alignment
+Switch to using more flexible mspec data flow between scripts
+
 ______________________________________________________________________________
 --------------------------------26/9/2018 -----------------------------------
 Big Update:

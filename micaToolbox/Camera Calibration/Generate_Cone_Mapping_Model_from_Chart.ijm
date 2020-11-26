@@ -52,8 +52,19 @@ if(nResults==0){
 
 
 } else{  // load from results window
-	columns = split(String.getResultsHeadings, "\t"); //array of column names (must not have any repeats)
+
+	columns = String.getResultsHeadings;
+	// remove first empty column if present
+	columns = replace(columns, " \t", "");
+	columns = replace(columns, "Label\t", "");
+
+	columns = split(columns, "\t"); //array of column names (must not have any repeats)
+
+
+
 	nColumns = columns.length;
+
+
 	chartVals = newArray(nResults*nColumns);
 
 

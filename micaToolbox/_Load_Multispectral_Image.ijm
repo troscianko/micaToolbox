@@ -80,9 +80,9 @@ run("Create Stack from Config File", tempString);
 
 //run("Create Stack from Config File");
 if(imageOutput == "Linear Stack")
-	run("Normalise & Align Multispectral Stack", "curve=[Straight Line] align_only");
+	run("Normalise & Align Multispectral Stack", "curve=[Straight Line] align");  // align only
 else
-	run("Normalise & Align Multispectral Stack", "curve=[Straight Line]");
+	run("Normalise & Align Multispectral Stack", "normalise curve=[Straight Line] align");
 
 
 

@@ -5,12 +5,12 @@ Same photo
 0
 0
 0
-Manual Align
+None
 16
 1
 0.005
 1
 1
 Linear Normalised Reflectance Stack
-Danaus_Male
+Test
 1

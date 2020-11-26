@@ -118,7 +118,7 @@ for(i=startNumber; i<mspecList.length; i++){
 	// LOAD MULTISPECTRAL IMAGE
 	imageString = "select=[" + imageDIR + mspecList[i] + "]";
 	run("Create Stack from Config File", imageString);
-	run("Normalise & Align Multispectral Stack", "curve=[Straight Line]");
+	run("Normalise & Align Multispectral Stack", "normalise curve=[Straight Line] align");
 	setSlice(1);
 
 	// SCALE IMAGE

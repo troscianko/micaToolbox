@@ -47,43 +47,84 @@ Gamma Variate,
 */
 
 	Dialog.create("Linearisation & Normalisation Options");
+		Dialog.addCheckbox("Normalise", true);
 		Dialog.addChoice("Curve", fitOptions, "Straight Line");
 		//Dialog.addChoice("Normalisation", lineariseOptions, "Linearise & Normalise");
 		Dialog.addCheckbox("Log linearisation fit results", false);
-		Dialog.addCheckbox("Align_Only", false);
+		Dialog.addCheckbox("Align", true);
+
 	Dialog.show();
 
+	normaliseChoice = Dialog.getCheckbox();
 	equation = Dialog.getChoice();
 	//lineariseOnly = Dialog.getChoice();
 	logResults = Dialog.getCheckbox();
-	alignOnly = Dialog.getCheckbox();
+	alignChoice = Dialog.getCheckbox();
 
 
-run("32-bit");
 setBatchMode(true);
+
+
 
 for(j=0; j<nSlices; j++){
 
 	setSlice(j+1);
 
-	// EXTRACT DATA FROM SLICE LABEL
 
-	//linData = getInfo("slice.label"); // doesn't extract the whole label 
-	linData = getMetadata("Label");
-	linData = split(linData, ",");
-	alignData = split(linData[0], ":");
+	// EXTRACT DATA FROM METADATA
 
-	imageLabel = split(linData[0], ":");
-	imageLabel = imageLabel[0] + ":" + imageLabel[1];
+	metaString = getMetadata();
+	metaString = split(metaString, "\n");
 
+	refFlag = 0;
+	alignFlag = 0;
+
+	for(i=0; i<metaString.length; i++){
+
+		if(startsWith(metaString[i], "refVals=") == true){
+			refVals = replace(metaString[i], "refVals=", "");
+			refFlag = 1;
+		}
+
+		if(startsWith(metaString[i], "alignMethod=") == true){
+			alignMethod = replace(metaString[i], "alignMethod=", "");
+			alignFlag ++;
+		}
+		
+
+		if(startsWith(metaString[i], "alignData=") == true){
+			alignData = replace(metaString[i], "alignData=", "");
+			alignFlag ++;
+		}
+			
+
+	}
+
+	if(normaliseChoice == true && refFlag == 0)
+		waitForUser("The reflectance metadata are not present - has this image already been processed?");
+
+	//if(alignChoice == true && alignFlag < 2)
+	if(alignMethod != "None" && alignFlag <2)
+		exit("The alignment metadata are not present - has this image already been processed?");
+
+	//imageLabel = getMetadata("Label");
+
+	if(alignMethod == "None")
+		alignChoice = 0;
 	// ALIGN
+	if(alignChoice == true){
 
-	if(alignData[4] == "1"){ // no rescaling required
-		if(alignData[2] !="0" || alignData[3] !="0"){ // needs shifting
+	if(alignData != "0:0:1"){
+
+	sliceAlignData = split(alignData, ":");
+	
+	if(alignMethod == "Manual Align" || alignMethod == "Auto-Align"){
+
+	if(sliceAlignData[2] == "1"){ // no rescaling required
+		if(sliceAlignData[0] !="0" || sliceAlignData[1] !="0"){ // needs shifting
 			run("Select All");
 			run("Copy");
-			makeRectangle( -1*parseInt(alignData[2]), -1*parseInt(alignData[3]), getWidth(), getHeight());
-			//makeRectangle( parseInt(alignData[2]), parseInt(alignData[3]), getWidth(), getHeight());
+			makeRectangle( -1*parseInt(sliceAlignData[0]), -1*parseInt(sliceAlignData[1]), getWidth(), getHeight());
 			run("Paste");
 
 			// At this point the image could either be cropped to the smallest common area, or just colour the outside black
@@ -97,13 +138,9 @@ for(j=0; j<nSlices; j++){
 	// ALIGN & SCALE
 
 		multiSpecID = getImageID();
-		//run("Scale...", "x=" + alignData[4] +" y=" + alignData[4] +" z=- width=" + round(parseFloat(alignData[4])*getWidth()) + " height=" + round(parseFloat(alignData[4])*getWidth()) + " depth=1 interpolation=Bilinear create title=resized");
-
 		run("Select All");
-		//run("Copy");
-		//run("Internal Clipboard");
-		
-		run("Scale...", "x=" + alignData[4] +" y=" + alignData[4] +" interpolation=Bilinear create title=scaled.tif");
+
+		run("Scale...", "x=" + sliceAlignData[2] +" y=" + sliceAlignData[2] +" interpolation=Bilinear create title=scaled.tif");
 		scaledImageID = getImageID();
 		scaledWidth = getWidth();
 		scaledHeight = getHeight();
@@ -111,10 +148,8 @@ for(j=0; j<nSlices; j++){
 		run("Copy");
 
 		selectImage(multiSpecID);
-		//makeRectangle( -1*parseInt(alignData[2]), -1*parseInt(alignData[3]), getWidth(), getHeight());
-		makeRectangle( -1*parseInt(alignData[2]), -1*parseInt(alignData[3]), scaledWidth, scaledHeight);
+		makeRectangle( -1*parseInt(sliceAlignData[0]), -1*parseInt(sliceAlignData[1]), scaledWidth, scaledHeight);
 		run("Paste");
-		//run("Crop");
 		setBackgroundColor(0, 0, 0);
 		run("Clear Outside", "slice");
 
@@ -122,12 +157,28 @@ for(j=0; j<nSlices; j++){
 		close();
 
 	}// else align & scale
+	} // align method = manual or auto
+
+
+	if(alignMethod == "Affine Align"){
+
+		ts = "xc=" + sliceAlignData[0] +" xx=" + sliceAlignData[1]  +" xy=" + sliceAlignData[2] + " yc=" + sliceAlignData[3] + " yx=" + sliceAlignData[4] + " yy=" + sliceAlignData[5] + " slice=" + (j+1);
+		run("Affine align slice", ts);
+
+	} // align method = affine
+
+
+	} // align data equals 0:0:1, so don't do anything
+	} // align choice ==true
 
 	// LINEARISE & NORMALISE
 
-	if(alignOnly == 0){
+	if(normaliseChoice == true){
 
-		nStandards = linData.length-1;
+
+		sliceRefVals = split(refVals, "_");
+
+		nStandards = sliceRefVals.length;
 
 		if(nStandards>0){// only normalise image if there's a grey standard
 
@@ -135,9 +186,8 @@ for(j=0; j<nSlices; j++){
 			pxVals = newArray(nStandards);
 
 			for(i=0; i<nStandards; i++){
-				tempVals = split(linData[i+1], ":");
-				//greyVals[i] = (parseFloat(tempVals[0])/100)*65535; // convert to 16-bit linear reflectance
-				greyVals[i] = parseFloat(tempVals[0]); // convert to 16-bit linear reflectance
+				tempVals = split(sliceRefVals[i], ":");
+				greyVals[i] = parseFloat(tempVals[0]);
 				pxVals[i] = parseFloat(tempVals[1]);
 			}
 
@@ -174,8 +224,8 @@ for(j=0; j<nSlices; j++){
 				}
 
 				fitR2 = Fit.rSquared;
-				if(fitR2 < 0.998)
-				print("WARNING - linearisation fit is not perfect, R^2 = " + fitR2 );
+				if(fitR2 < 0.98)
+				print("WARNING - linearisation fit is not perfect, R^2 = " + fitR2 + "\n \n This normally occurs when standards are not perfectly measured\n or when there are subtle light intensity differences" );
 			}// multiple standards
 
 			if(nStandards == 1){ // ONLY ONE STANDARD
@@ -189,23 +239,16 @@ for(j=0; j<nSlices; j++){
 
 			lineariseString = "x^2=" + x2 +" x=" + x1 + " constant=" + x0 + " slice=" + (j+1);
 
+
 			run("Polynomial Slice Transform 32Bit", lineariseString);
-			newLabel = "label=" +  imageLabel + ":Normalised";
-			run("Set Label...", newLabel);
+			newLabel = metaString[0] + ":Normalised";
+			setMetadata(newLabel);
 
 		}// >0 stadnards
 
-		// Rename Slice label so the linearisation isn't inadvertently repeated
 
-		if(nStandards==0){
-			newLabel = "label=" +  imageLabel + ":Linear";
-			run("Set Label...", newLabel);
-		}
+	}// linearise and normalise
 
-	} else { // align only
-		newLabel = "label=" +  imageLabel + ":AlignedLinear";
-		run("Set Label...", newLabel);
-	}// alignment only
 
 }//j
 

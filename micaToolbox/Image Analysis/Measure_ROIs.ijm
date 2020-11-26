@@ -55,7 +55,6 @@ setRGBWeights(0,0,1); //blue
 	setResult("b_mean", row, mean);
 	setResult("b_sd", row, sd);
 
-r
 }// RGB image
 
 }// ignore scale bar
