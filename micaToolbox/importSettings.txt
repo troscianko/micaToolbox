@@ -1,7 +1,7 @@
 Visible
 Same photo
 0
-7
+20
 0
 0
 0
@@ -10,7 +10,7 @@ None
 1
 0.005
 1
-1
+sRGB
 Linear Normalised Reflectance Stack
-Test
-1
+a_test
+0

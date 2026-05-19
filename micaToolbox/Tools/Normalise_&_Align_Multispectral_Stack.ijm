@@ -62,7 +62,7 @@ Gamma Variate,
 	alignChoice = Dialog.getCheckbox();
 
 
-setBatchMode(true);
+//setBatchMode(true);
 
 
 
@@ -100,12 +100,12 @@ for(j=0; j<nSlices; j++){
 
 	}
 
-	if(normaliseChoice == true && refFlag == 0)
-		waitForUser("The reflectance metadata are not present - has this image already been processed?");
+	//if(normaliseChoice == true && refFlag == 0)
+	//	waitForUser("The reflectance metadata are not present - has this image already been processed?");
 
 	//if(alignChoice == true && alignFlag < 2)
-	if(alignMethod != "None" && alignFlag <2)
-		exit("The alignment metadata are not present - has this image already been processed?");
+	//if(alignMethod != "None" && alignFlag <2)
+	//	exit("The alignment metadata are not present - has this image already been processed?");
 
 	//imageLabel = getMetadata("Label");
 
@@ -173,12 +173,11 @@ for(j=0; j<nSlices; j++){
 
 	// LINEARISE & NORMALISE
 
-	if(normaliseChoice == true){
-
+	if(normaliseChoice == true && refFlag == 1){
 
 		sliceRefVals = split(refVals, "_");
-
 		nStandards = sliceRefVals.length;
+
 
 		if(nStandards>0){// only normalise image if there's a grey standard
 
@@ -252,4 +251,4 @@ for(j=0; j<nSlices; j++){
 
 }//j
 
-setMinAndMax(0, 100);
+run("Set Min And Max", "min=0 max=100");

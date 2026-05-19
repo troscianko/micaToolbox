@@ -21,7 +21,7 @@ ____________________________________________________________________
 
 
 
-
+oID = getImageID();
 oTitle = getTitle();
 
 // LIST VISUAL SYSTEM WEBER FRACTIONS
@@ -66,14 +66,14 @@ if(File.exists(settingsFilePath) == 1){
 Dialog.create("QCPA Framework Options");
 	Dialog.addMessage("Ensure the current image has a luminance channel as the last slice");
 	Dialog.addMessage("Select which aspects of processing to apply:");
-	Dialog.addChoice("Acuity Correction", acuityMethod, defaultSettings[0]);
+	Dialog.addChoice("Acuity_Correction", acuityMethod, defaultSettings[0]);
 	Dialog.addMessage("AcuityView is fast and uses FFT, but requires use on whole-images.\nThe Gaussian method is slower, but can measure ROIs independently\nof their surroundings");
 	Dialog.addCheckbox("RNL_Ranked_Filter", defaultSettings[1]);
 	Dialog.addChoice("Clustering", clusterMethod, defaultSettings[2]);
-	Dialog.addChoice("Visual system Weber fractions", vsNames, defaultSettings[3]);
-	Dialog.addNumber("Luminance Weber fraction", defaultSettings[4]);
+	Dialog.addChoice("Visual_system_Weber_fractions", vsNames, defaultSettings[3]);
+	Dialog.addNumber("Luminance_Weber_fraction", defaultSettings[4]);
 	Dialog.addCheckbox("Particle Analysis", defaultSettings[5]);
-	Dialog.addCheckbox("Local Edge Intensity Analysis", defaultSettings[6]);
+	Dialog.addCheckbox("Local_Edge_Intensity Analysis", defaultSettings[6]);
 	Dialog.addMessage("When using this Beta version of the framework cite: van den Berg &\nTroscianko et al. (2019) Quantitative Colour Pattern Analysis (QCPA):\nA Comprehensive Framework for the Analysis of Colour Patterns in\nNature, BIORXIV/2019/592261");
 	Dialog.addHelp("http://www.empiricalimaging.com/knowledge-base/running-the-qcpa-framework/");
 Dialog.show();
@@ -181,6 +181,15 @@ if(vsChoice == "Custom"){ //----------------custom Weber fractions------------
 
 gausROI = "whole image";
 
+if(acChoice != "None"){
+	tPath = getDirectory("plugins") + "tempROI.zip";
+	tA = newArray(roiManager("count"));
+	for(i=0; i<roiManager("count"); i++)
+		tA[i] = i;
+	roiManager("select", tA);
+	roiManager("Save", tPath);
+}
+
 if(acChoice == "AcuityView")
 	run("Acuity View");
 if(acChoice == "Gaussian"){
@@ -282,18 +291,18 @@ if(clChoice == "RNL Cluster"){
 	"0");
 
 	Dialog.create("RNL Clustering Settings");
-		Dialog.addNumber("Colour JND Threshold", defaultSettings[0]);
-		Dialog.addNumber("Luminance JND Threshold", defaultSettings[1]);
+		Dialog.addNumber("Colour_JND_Threshold", defaultSettings[0]);
+		Dialog.addNumber("Luminance_JND_Threshold", defaultSettings[1]);
 		Dialog.addNumber("Loops", defaultSettings[2]);
-		Dialog.addNumber("Radius multiplier", defaultSettings[3]);
-		Dialog.addNumber("Minimum cluster size", defaultSettings[4]);
-		Dialog.addNumber("Compare all clusters from pass:", defaultSettings[5]);
-		Dialog.addNumber("Stop clustering if number of clusters is below", defaultSettings[6]);
-		Dialog.addNumber("Record output from pass", defaultSettings[7]);
-		Dialog.addString("Image Label", oTitle, defaultSettings[8]);
+		Dialog.addNumber("Radius_multiplier", defaultSettings[3]);
+		Dialog.addNumber("Minimum_cluster size", defaultSettings[4]);
+		Dialog.addNumber("Compare_all clusters from pass:", defaultSettings[5]);
+		Dialog.addNumber("Stop_clustering if number of clusters is below", defaultSettings[6]);
+		Dialog.addNumber("Record_output from pass", defaultSettings[7]);
+		Dialog.addString("Image_Label", oTitle, defaultSettings[8]);
 		//Dialog.addNumber("Luminance Weber fraction", defaultSettings[9]);
-		Dialog.addCheckbox("Show separate horizontal and vertical adjacency results", defaultSettings[9]); 
-		Dialog.addCheckbox("Output adjacency matrix", defaultSettings[10]); 
+		Dialog.addCheckbox("Show_separate horizontal and vertical adjacency results", defaultSettings[9]); 
+		Dialog.addCheckbox("Output_adjacency_matrix", defaultSettings[10]); 
 		Dialog.addHelp("http://www.empiricalimaging.com/knowledge-base/rnl-clustering/");	
 	Dialog.show();
 
@@ -592,7 +601,19 @@ if(leiAnalysis == true){
 
 
 
+if(acChoice != "None"){
 
+	selectImage(oID);
+
+	while(roiManager("count") > 0){
+		roiManager("select", 0);
+		roiManager("delete");
+	}
+
+	roiManager("Open", tPath);
+	if(File.delete(tPath) != 1)
+		waitForUser("Unable to delete the temporary ROI file here: " + tPath);
+}
 
 
 

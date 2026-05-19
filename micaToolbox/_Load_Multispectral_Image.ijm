@@ -75,16 +75,21 @@ dataFile = File.open(settingsFilePath);
 File.close(dataFile);
 }
 
+tempVal = roiManager("count"); // dummy line for opening ROI manager
+
 setBatchMode(true);
 run("Create Stack from Config File", tempString);
+//setBatchMode("show");
 
 //run("Create Stack from Config File");
-if(imageOutput == "Linear Stack")
-	run("Normalise & Align Multispectral Stack", "curve=[Straight Line] align");  // align only
-else
+//if(imageOutput == "Linear Normalised Reflectance Stack")
 	run("Normalise & Align Multispectral Stack", "normalise curve=[Straight Line] align");
+//else
+//	run("Normalise & Align Multispectral Stack", "curve=[Straight Line] align");  // align only
 
 
+//setBatchMode("show");
+//waitForUser("waiting");
 
 if(imageOutput == "Linear Stack")
 	setMinAndMax(0, 65535);
@@ -104,12 +109,13 @@ if(imageOutput == "Linear Colour Image"){
 
 	setMinAndMax(0, 100);
 	run("Make Composite", "display=Composite");
-	setSlice(3);
-	setMinAndMax(0, 100);
-	setSlice(2);
-	setMinAndMax(0, 100);
-	setSlice(1);
-	setMinAndMax(0, 100);
+	//setSlice(3);
+	//setMinAndMax(0, 100);
+	//setSlice(2);
+	//setMinAndMax(0, 100);
+	//setSlice(1);
+	//setMinAndMax(0, 100);
+	run("Set Min And Max", "min=0 max=100");
 	setBatchMode(false);
 }
 
@@ -126,24 +132,30 @@ if(imageOutput == "Non-linear Colour Image"){
 	}
 
 	run("Square Root", "stack");
-	setMinAndMax(0, 10);
 	run("Make Composite", "display=Composite");
 	setSlice(3);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,bMax,sd);
 	setSlice(2);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,gMax,sd);
 	setSlice(1);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,rMax,sd);
+	cMax = rMax;
+	if(gMax > cMax)
+		cMax = gMax;
+	if(bMax > cMax)
+		cMax = bMax;
+	ts = "min=0 max=" + cMax;
+	run("Set Min And Max", ts);
 	setBatchMode(false);
 
 	setColor(200, 0, 0);
-	colourSwitch = colourSwitch * -1;
+	//colourSwitch = colourSwitch * -1;
 	setFont("SansSerif", getHeight()*0.04);
 
 
 	setFont("SansSerif", getHeight()*0.02);
 	setColor(200, 0, 0);
-	Overlay.drawString("Non-linear image - do not measure pixel values", getWidth()*0.05, getHeight()*0.05);
+	Overlay.drawString("Non-linear image - values SQRT transformed", getWidth()*0.05, getHeight()*0.05);
 	Overlay.show;
 
 }
@@ -169,18 +181,25 @@ if(imageOutput == "Non-linear Colour VIS-UV Image"){
 
 
 	run("Square Root", "stack");
-	setMinAndMax(0, 10);
+	//setMinAndMax(0, 1);
 	run("Make Composite", "display=Composite");
 	setSlice(3);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,bMax,sd);
 	setSlice(2);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,gMax,sd);
 	setSlice(1);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,rMax,sd);
+	cMax = rMax;
+	if(gMax > cMax)
+		cMax = gMax;
+	if(bMax > cMax)
+		cMax = bMax;
+	ts = "min=0 max=" + cMax;
+	run("Set Min And Max", ts);
 
 	setFont("SansSerif", getHeight()*0.02);
 	setColor(200, 0, 0);
-	Overlay.drawString("Non-linear image - do not measure pixel values", getWidth()*0.05, getHeight()*0.05);
+	Overlay.drawString("Non-linear image - values SQRT transformed", getWidth()*0.05, getHeight()*0.05);
 	Overlay.show;
 
 

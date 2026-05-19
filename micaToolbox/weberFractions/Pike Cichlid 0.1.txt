@@ -1,0 +1,4 @@
+Based on values used in Yong et al 2021 and  Kröger et al. 1999
+lw	0.1
+mw	0.1
+sw	0.14142135623731

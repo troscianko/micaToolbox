@@ -77,8 +77,8 @@ calcChoice = newArray("Angular width of image", "Viewing distance");
 Dialog.create("Gaussian Acuity Control");
 
 	Dialog.addMessage("_________________________________________Acuity Settings_________________________________________");
-	Dialog.addChoice("Acuity units:", acChoice, defaultSettings[0]);
-	Dialog.addNumber("Acuity value", defaultSettings[1]);
+	Dialog.addChoice("Acuity_units:", acChoice, defaultSettings[0]);
+	Dialog.addNumber("Acuity_value", defaultSettings[1]);
 
 	Dialog.addMessage("____________________________________Distance/Angle Settings____________________________________");
 	Dialog.addChoice("Method:", calcChoice, defaultSettings[2]);

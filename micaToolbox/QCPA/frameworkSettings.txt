@@ -1,6 +1,6 @@
-Gaussian
+AcuityView
 1
-None
+RNL Cluster
 Bluetit 0.05
 0.1
 0

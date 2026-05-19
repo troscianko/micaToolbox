@@ -1,0 +1,7 @@
+Name:Chicken 0.1cmd2
+L_Model:Gabor
+Scene:Woodland
+SFs:0.25,0.5,1,2
+L_CS:2.1709,2.631,2.5886,2.0677
+L_BW:2
+L_Weights:0.004173,0.007288,0.007287,0.005473

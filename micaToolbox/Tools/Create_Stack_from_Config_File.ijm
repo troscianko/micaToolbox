@@ -128,8 +128,15 @@ for(j=0; j<nPhotos; j++){
 		run("DCRAW import", dcrawString);
 	else {
 		open(imagePath);
-		if(bitDepth == 24)
-			run("RGB Stack");
+		oID = getImageID();
+		if(bitDepth == 24){
+			//run("RGB Stack");
+			run("RGB to 32Bit");
+			nID = getImageID();
+			selectImage(oID);
+			close();
+			selectImage(nID);
+		}
 		if(bitDepth != 32)
 			run("32-bit");
 
@@ -137,8 +144,14 @@ for(j=0; j<nPhotos; j++){
 		if(linModels.length != nSlices)
 			exit("The chosen linearity model has a different number of channels than the selected image");
 
-		for(a=0; a<nSlices; a++) // linearise image
+//Array.show(linModels);
+
+		for(a=1; a<nSlices; a++) {// linearise image
+			//setSlice(a+1);
 			run("Linearisation Function", linModels[a]);
+		}
+setSlice(3);
+run("Linearisation Function", linModels[0]);
 
 	}
 
@@ -220,7 +233,7 @@ if(parseInt(sliceOrder[i]) != 0){
 }
 
 
-setBatchMode(false);
+//setBatchMode(false);
 showStatus("Finished loading slices");
 
 
@@ -329,7 +342,8 @@ for(j=0; j<nPhotos; j++){
 	else {
 		open(imagePath);
 		if(bitDepth == 24)
-			run("RGB Stack");
+			//run("RGB Stack");
+			run("RGB to 32Bit");
 		if(bitDepth != 32)
 			run("32-bit");
 
@@ -426,7 +440,7 @@ for(i=1; i<=sliceLabels.length; i++){
 	//run("Set Label...", sliceLabels[i-1]);
 }// i labels
 
-setBatchMode(false);
+//setBatchMode(false);
 showStatus("Finished loading slices");
 
 
@@ -447,11 +461,7 @@ setSlice(1);
 }///------------legacy---------------
 
 
-
-
-
-
-
+//setBatchMode(false);
 
 
 

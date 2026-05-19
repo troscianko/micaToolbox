@@ -18,15 +18,17 @@ if(bitDepth!=24){ // image stack
 if(getMetadata("Label") == ""){
 	for(i=1; i<nSlices+1; i++){
 		setSlice(i);
-		getStatistics(area, mean);
+		getStatistics(area, mean, min, max, sd);
 		setResult(i + "_mean", row, mean);
+		setResult(i + "_SD", row, sd);
 	}
 } else {
 
 	for(i=1; i<nSlices+1; i++){
 		setSlice(i);
-		getStatistics(area, mean);
+		getStatistics(area, mean, min, max, sd);
 		setResult(getMetadata("Label")+"_mean", row, mean);
+		setResult(getMetadata("Label")+"_SD", row, sd);
 	}
 }
 
@@ -37,16 +39,19 @@ if(getMetadata("Label") == ""){
 if(bitDepth==24){ // RGB image
 
 setRGBWeights(1,0,0); //red
-	getStatistics(area, mean);
+	getStatistics(area, mean,min,max,sd);
 	setResult("Red_mean", row, mean);
+	setResult("Red_SD", row, sd);
 
 setRGBWeights(0,1,0); //green
-	getStatistics(area, mean);
+	getStatistics(area, mean,min,max,sd);
 	setResult("Green_mean", row, mean);
+	setResult("Green_SD", row, sd);
 
 setRGBWeights(0,0,1); //blue
-	getStatistics(area, mean);
+	getStatistics(area, mean,min,max,sd);
 	setResult("Blue_mean", row, mean);
+	setResult("Blue_SD", row, sd);
 
 
 }// RGB image

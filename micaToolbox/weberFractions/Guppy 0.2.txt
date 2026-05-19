@@ -1,0 +1,5 @@
+Guppy cone ratios of 1:1:2:2  (long 1993 and Taylor 2011) and noise of 0.2
+lw	0.2
+mw	0.2
+sw	0.282842712474619
+uv	0.282842712474619

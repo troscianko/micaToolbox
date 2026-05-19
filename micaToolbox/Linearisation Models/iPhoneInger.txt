@@ -1,0 +1,1 @@
+equation=[Exponential with Offset] a=0.235626391 b=-0.026013224 c=1.871031727 slice=1,equation=[Exponential with Offset] a=0.235626391 b=-0.026013224 c=1.871031727 slice=2,equation=[Exponential with Offset] a=0.235626391 b=-0.026013224 c=1.871031727 slice=3

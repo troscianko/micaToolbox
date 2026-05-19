@@ -385,14 +385,22 @@ for(j=0; j<nPhotos; j++){
 		selectImage(photoID);
 
 		run("Square Root", "stack");
-		setMinAndMax(0, 10);
+		//setMinAndMax(0, 10);
 		run("Make Composite", "display=Composite");
 		setSlice(3);
-		setMinAndMax(0, 255);
+		getStatistics(area,mean,min,bMax,sd);
 		setSlice(2);
-		setMinAndMax(0, 255);
+		getStatistics(area,mean,min,gMax,sd);
 		setSlice(1);
-		setMinAndMax(0, 255);
+		getStatistics(area,mean,min,rMax,sd);
+		cMax = rMax;
+		if(gMax > cMax)
+			cMax = gMax;
+		if(bMax > cMax)
+			cMax = bMax;
+		ts = "min=0 max=" + cMax;
+		run("Set Min And Max", ts);		
+
 		setBatchMode(false);
 
 	} else {
@@ -414,7 +422,13 @@ for(j=0; j<nPhotos; j++){
 			selectImage(photoID);
 
 
-			run("RGB Stack");
+			//run("RGB Stack");
+			run("RGB to 32Bit");
+			tID = getImageID();
+			selectImage(photoID);
+			close();
+			photoID = tID;
+
 			//run("32-bit");
 			//run("Make Composite", "display=Composite");
 		} else rgbFlag = 0;
@@ -437,12 +451,18 @@ for(j=0; j<nPhotos; j++){
 		linCameraSettings[j] = nonLinSettingsString;
 		nonLinSettingsString=split(nonLinSettingsString, ","); // split settings
 
-		selectImage(photoID);
+//		selectImage(photoID);
+//setBatchMode("show");
+//waitForUser("waiting");
 		if(nonLinSettingsString.length != nSlices)
 			exit("The chosen linearity model has a different number of channels than the selected image");
 
-		for(a=0; a<nSlices; a++) // linearise image
+		for(a=1; a<nSlices; a++){ // linearise image
+			//setSlice(a+1);
 			run("Linearisation Function", nonLinSettingsString[a]);
+		}
+		setSlice(3);
+		run("Linearisation Function", nonLinSettingsString[0]);
 
 		//setBatchMode("show");
 
@@ -460,12 +480,20 @@ for(j=0; j<nPhotos; j++){
 			run("Square Root", "stack");
 			setMinAndMax(0, 10);
 			run("Make Composite", "display=Composite");
+
 			setSlice(3);
-			setMinAndMax(0, 16);
+			getStatistics(area,mean,min,bMax,sd);
 			setSlice(2);
-			setMinAndMax(0, 16);
+			getStatistics(area,mean,min,gMax,sd);
 			setSlice(1);
-			setMinAndMax(0, 16);
+			getStatistics(area,mean,min,rMax,sd);
+			cMax = rMax;
+			if(gMax > cMax)
+				cMax = gMax;
+			if(bMax > cMax)
+				cMax = bMax;
+			ts = "min=0 max=" + cMax;
+			run("Set Min And Max", ts);
 		}
 		setBatchMode(false);
 		
@@ -896,14 +924,21 @@ if(greyLocation == "Separate photos"){
 		selectImage(photoID);
 
 		run("Square Root", "stack");
-		setMinAndMax(0, 10);
+
 		run("Make Composite", "display=Composite");
 		setSlice(3);
-		setMinAndMax(0, 255);
+		getStatistics(area,mean,min,bMax,sd);
 		setSlice(2);
-		setMinAndMax(0, 255);
+		getStatistics(area,mean,min,gMax,sd);
 		setSlice(1);
-		setMinAndMax(0, 255);
+		getStatistics(area,mean,min,rMax,sd);
+		cMax = rMax;
+		if(gMax > cMax)
+			cMax = gMax;
+		if(bMax > cMax)
+			cMax = bMax;
+		ts = "min=0 max=" + cMax;
+		run("Set Min And Max", ts);
 		setBatchMode(false);
 
 	} else {
@@ -924,7 +959,8 @@ if(greyLocation == "Separate photos"){
 			selectImage(photoID);
 
 
-			run("RGB Stack");
+			//run("RGB Stack");
+			run("RBG to 32Bit");
 			//run("32-bit");
 			//run("Make Composite", "display=Composite");
 		} else rgbFlag = 0;
@@ -949,14 +985,21 @@ if(greyLocation == "Separate photos"){
 			selectImage(photoID);
 
 			run("Square Root", "stack");
-			setMinAndMax(0, 10);
+			//setMinAndMax(0, 10);
 			run("Make Composite", "display=Composite");
 			setSlice(3);
-			setMinAndMax(0, 16);
+			getStatistics(area,mean,min,bMax,sd);
 			setSlice(2);
-			setMinAndMax(0, 16);
+			getStatistics(area,mean,min,gMax,sd);
 			setSlice(1);
-			setMinAndMax(0, 16);
+			getStatistics(area,mean,min,rMax,sd);
+			cMax = rMax;
+			if(gMax > cMax)
+				cMax = gMax;
+			if(bMax > cMax)
+				cMax = bMax;
+			ts = "min=0 max=" + cMax;
+			run("Set Min And Max", ts);
 		}
 		setBatchMode(false);
 	}
@@ -1297,12 +1340,16 @@ for(i=1; i<=3; i++){
 
 
 
-
-		if(greySaveString != ""){
+		// add separators
+		if(greySaveString != "")
 			greySaveString = greySaveString + ",";
+
+		if(labelSaveString != "")
 			labelSaveString = labelSaveString + ",";
+
+		if(alignSaveString != "")
 			alignSaveString = alignSaveString + ",";
-		}
+		
 
 		tAlignSaveString = "";
 
@@ -1493,14 +1540,15 @@ if(imageOutput == "Linear Colour Image"){
 		}
 	}
 
-	setMinAndMax(0, 100);
+	//setMinAndMax(0, 100);
 	run("Make Composite", "display=Composite");
-	setSlice(3);
-	setMinAndMax(0, 100);
-	setSlice(2);
-	setMinAndMax(0, 100);
-	setSlice(1);
-	setMinAndMax(0, 100);
+	//setSlice(3);
+	//setMinAndMax(0, 100);
+	//setSlice(2);
+	//setMinAndMax(0, 100);
+	//setSlice(1);
+	//setMinAndMax(0, 100);
+	run("Set Min And Max", "min=0 max=100");
 	setBatchMode(false);
 }
 
@@ -1517,24 +1565,31 @@ if(imageOutput == "Non-linear Colour Image"){
 	}
 
 	run("Square Root", "stack");
-	setMinAndMax(0, 10);
+	//setMinAndMax(0, 1);
 	run("Make Composite", "display=Composite");
 	setSlice(3);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,bMax,sd);
 	setSlice(2);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,gMax,sd);
 	setSlice(1);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,rMax,sd);
+	cMax = rMax;
+	if(gMax > cMax)
+		cMax = gMax;
+	if(bMax > cMax)
+		cMax = bMax;
+	ts = "min=0 max=" + cMax;
+	run("Set Min And Max", ts);
 	setBatchMode(false);
 
 	setColor(200, 0, 0);
-	colourSwitch = colourSwitch * -1;
+	//colourSwitch = colourSwitch * -1;
 	setFont("SansSerif", getHeight()*0.04);
 
 
 	setFont("SansSerif", getHeight()*0.02);
 	setColor(200, 0, 0);
-	Overlay.drawString("Non-linear image - do not measure pixel values", getWidth()*0.05, getHeight()*0.05);
+	Overlay.drawString("Non-linear image - values SQRT transformed", getWidth()*0.05, getHeight()*0.05);
 	Overlay.show;
 
 }
@@ -1563,15 +1618,22 @@ if(imageOutput == "Non-linear Colour VIS-UV Image"){
 	setMinAndMax(0, 10);
 	run("Make Composite", "display=Composite");
 	setSlice(3);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,bMax,sd);
 	setSlice(2);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,gMax,sd);
 	setSlice(1);
-	setMinAndMax(0, 10);
+	getStatistics(area,mean,min,rMax,sd);
+	cMax = rMax;
+	if(gMax > cMax)
+		cMax = gMax;
+	if(bMax > cMax)
+		cMax = bMax;
+	ts = "min=0 max=" + cMax;
+	run("Set Min And Max", ts);
 
 	setFont("SansSerif", getHeight()*0.02);
 	setColor(200, 0, 0);
-	Overlay.drawString("Non-linear image - do not measure pixel values", getWidth()*0.05, getHeight()*0.05);
+	Overlay.drawString("Non-linear image - values SQRT transformed", getWidth()*0.05, getHeight()*0.05);
 	Overlay.show;
 
 

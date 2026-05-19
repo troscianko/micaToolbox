@@ -1,5 +1,5 @@
 Cycles per degree
-6
+10
 Viewing distance
-500
+2560
 5
