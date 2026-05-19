@@ -1,1 +1,0 @@
-equation=[JT Linearisation] a=107.826076765 b=29.549779373 c=0.000718786 d=0.091322562 slice=1,equation=[JT Linearisation] a=113.336993965 b=31.717217742 c=0.000526635 d=0.078949759 slice=2,equation=[JT Linearisation] a=161.377787037 b=22.043240324 c=0.000669354 d=0.039707401 slice=3
